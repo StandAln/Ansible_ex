@@ -1,0 +1,7 @@
+#!/bin/python
+
+import os, json
+
+print (json.dumps(os.listdir('/tmp')))
+
+####echo \"$(ls -A /tmp)\"####

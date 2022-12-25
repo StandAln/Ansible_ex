@@ -1,0 +1,16 @@
+[manager]
+vm-141123
+
+[worker]
+vm-141124
+
+[all:children]
+manager
+worker
+
+[web]
+host0 ip1=0.0.0.1 ip2=10.0.0.1
+host1 ip1=1.1.1.1 ip2=11.11.11.11
+host2 ip1=2.2.2.2 ip2=22.22.22.22
+host3 ip1=3.3.3.3 ip2=33.33.33.33
+host4 ip1=4.4.4.4 ip2=44.44.44.44

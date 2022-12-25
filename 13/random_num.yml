@@ -1,0 +1,33 @@
+---
+  - name: parsing passwd
+    hosts: localhost
+    gather_facts: no
+
+    vars_prompt:
+      - name: dlim
+        prompt: Введите нижнюю границу для загадываемого числа (по умолчанию 1)
+        private: no
+        default: 1
+
+      - name: ulim
+        prompt: Введите верхнюю границу для загадываемого числа (по умолчанию 100)
+        private: no
+        default: 100
+
+    tasks:
+
+      - name: change range
+        include_tasks: input.yml
+        when: ulim|int-2 < dlim|int
+
+      - name: get random number
+        set_fact:
+          rand: "{{ range(dlim|int,ulim|int+1)|list|random }}"
+
+      - name: guess number
+        include_tasks: guess.yml
+
+
+
+
+

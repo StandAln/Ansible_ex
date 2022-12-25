@@ -1,0 +1,129 @@
+---
+- name: loops
+  hosts: localhost
+  gather_facts: yes
+  gather_subset:
+    - '!all'
+    - '!min'
+    - mounts
+
+  tasks:
+
+    - name: list of even
+      debug:
+        var: item
+      loop: "{{ range(0,13,2) | list }}"
+
+    - name: firewall rules
+      firewalld:
+        port: "{{ item }}/tcp"
+        permanent: yes
+        immediate: yes
+        state: enabled
+      loop: "{{ range(8080,8090,3)| list }}"
+
+
+### Не придумал как через range сделать без двух таск итерации от 00 по 12 (00 считается как 0, а если в path делать "/tmp/ansible/dir0{{ item.num }}". то соответственно будут папки 010, 011, 012...
+### Так, же кажется, нельзя  назначать через range пользователей,т.к. это строки,а не числа, но мб можно еще подумать..
+### и последнее занимательное, если в переменно - списке dirs, в ключе num не ставить в начале "dir" почему-то нормально создадутся только папки 08-12, первые же будут все равно 0,1,...,7 - не понятно..
+
+    - name: create dir
+      file:
+        path: "/tmp/ansible/dir{{ item.num }}"
+        state: directory
+        owner: "{{ item.user}}"
+      loop:
+        "{{ dirs }}"
+      vars:
+        dirs:
+        - { num: 00, user: root}
+        - { num: 01, user: nobody}
+        - { num: 02, user: nobody}
+        - { num: 03, user: root}
+        - { num: 04, user: nobody}
+        - { num: 05, user: nobody}
+        - { num: 06, user: root}
+        - { num: 07, user: nobody}
+        - { num: 08, user: nobody}
+        - { num: 09, user: root}
+        - { num: 10, user: nobody}
+        - { num: 11, user: nobody}
+        - { num: 12, user: root}
+      tags: dirs
+
+#    - name: create dir
+#      file:
+#        path: "/tmp/ansible/dir{{ '%02d' | format(item) }}"
+#        state: directory
+#        owner: "{{ 'nobody' if item % 3 else 'root' }}"
+#        group: "{{ 'nobody' if item % 3 else 'root' }}"
+#      loop:
+#        "{{ range(0,13)| list }}"
+#      tags: dirs
+
+
+
+
+
+#    - name: msg mount free
+#      debug:
+#        msg: "{{ mounts.size_available }}"
+#        sum_free: "{{ sum_free | int + mounts.size_available | int }}"
+#      loop: "{{ ansible_facts.mounts }}"
+#      loop_control:
+#        loop_var: mounts
+#        label: "{{ mounts.size_available }}"
+
+
+    - name: loop mount free (no sum)
+      set_fact:
+        sum_free: "{{ sum_free | int + mounts.size_available | int }}"
+      loop: "{{ ansible_facts.mounts }}"
+      loop_control:
+        loop_var: mounts
+        label: "{{ mounts.size_available }}"
+      vars:
+        sum_free: 0
+
+    - name: msg mount total free (no sum)
+      debug:
+        msg: "{{ sum_free | int / 1000 / 1000 / 1000 }} Gb"
+
+    - name: msg mount total free (sum)
+      debug:
+        msg: "{{ ansible_facts | json_query('mounts[*].size_available') | sum / 1000 / 1000 / 1000 }} Gb"
+
+
+    - name: loop mount used (no sum)
+      set_fact:
+        sum_used: "{{ sum_used | int + mounts.size_total - mounts.size_available | int }}"
+      loop: "{{ ansible_facts.mounts }}"
+      loop_control:
+        loop_var: mounts
+        label: "{{ mounts.size_total }} {{ mounts.size_available }}"
+      vars:
+        sum_used: 0
+
+    - name: msg mount total used (no sum)
+      debug:
+        msg: "{{ sum_used | int / 1000 / 1000 / 1000 }} Gb"
+
+    - name: msg mount total used (sum)
+      debug:
+        msg: "{{ ansible_facts | json_query('mounts[*].size_total') | sum / 1000 / 1000 / 1000 - ansible_facts | json_query('mounts[*].size_available') | sum / 1000 / 1000 / 1000 }} Gb"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

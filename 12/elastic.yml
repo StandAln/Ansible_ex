@@ -1,0 +1,68 @@
+---
+  - name: parsing passwd
+    hosts: localhost
+    gather_facts: no
+
+    vars:
+      es_addr: 192.168.141.100
+      es_port: 9200
+      es_index: companydatabase
+      es_search_size: 4
+
+    tasks:
+
+      - name: get 100 rows
+        uri:
+          url: "http://192.168.141.100:9200/companydatabase/_search?size={{ es_search_size }}&pretty=yes"
+        register: es
+
+      - name: print shards
+        debug:
+          msg: "Количество шардов в индексе {{ es.json._shards.total }}"
+
+      - name: create list1 of _source
+        set_fact:
+          list1: "{{ list1|default([])+[es.json.hits.hits[item]._source] }}"
+        loop: "{{ range(0,es_search_size)|list }}"
+
+#      - name: print list1 of _source
+#        debug:
+#          var: list1
+
+      - name: create list2 of _source using json_query
+        set_fact:
+          list2: "{{ es|json_query('json.hits.hits[*]._source') }}"
+
+      - name: print list2 of _source
+        debug:
+          var: list2
+
+      - name: count over MaritalStatus
+        set_fact:
+          count_list: "{{ count_list|default([]) | combine({item: count_list[item]|default(0) + 1}) }}"
+        loop: "{{ list1|map(attribute='MaritalStatus')|list }}"
+
+#      - name: print counts over MaritalStatus
+#        debug:
+#          var: count_list
+
+      - name: change list1 with new Interests
+        set_fact:
+          list1: "{{ list1 | rejectattr('Address', 'equalto', human.Address) | list + [ human | combine ({'Interests': human.Interests.split(',') })] }}"
+        loop: "{{ list1 }}"
+        loop_control:
+          loop_var: human
+
+#      - name: print list1 with new Interests
+#        debug:
+#          var: list1
+
+      - name: create file with humans
+        copy:
+          dest: /tmp/humans.txt
+          content: |
+            {{ list1 | to_nice_json }}
+
+
+
+

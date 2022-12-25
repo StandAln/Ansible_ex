@@ -1,0 +1,27 @@
+---
+- name: parsing passwd
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    ip: 33.33.33.33
+
+  tasks:
+
+    - name: print hostvars
+      set_fact:
+       hosts: "{{ dict(groups['web'] | map('extract', hostvars, 'inventory_hostname')| list | zip (groups['web'] | map('extract', hostvars, 'ip1')| list | zip(groups['web'] | map('extract', hostvars, 'ip2')| list) | list) | list) }}"
+
+#    - name: print hosts
+#      debug:
+#        var: hosts.host0  #| dict2items
+
+    - name: check ip
+      debug:
+        msg: "{{ host.key }}"
+      loop: "{{ hosts|dict2items }}"
+      loop_control:
+        loop_var: host
+      when: ip in host.value
+
+

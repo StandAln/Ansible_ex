@@ -1,0 +1,16 @@
+---
+    - pause:
+        prompt: Вы ввели неверный диапазон поэтому снова введите нижнюю границу
+      register: input1
+
+    - pause:
+        prompt: и верхнюю границу
+      register: input2
+
+    - name: set dlim ulim
+      set_fact:
+        dlim: "{{ input1.user_input }}"
+        ulim: "{{ input2.user_input }}"
+
+    - include_tasks: input.yml
+      when: ulim|int-2 < dlim|int

@@ -1,0 +1,70 @@
+---
+- name: parsing passwd
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    passwd: "{{ lookup ('file', '/etc/passwd').split('\n') }}"
+
+  tasks:
+
+    - name: print passwd
+      debug:
+        var: passwd[0].split(':')[2]
+
+    - name: fill  dict
+      set_fact:
+        users: "{{ users| default([]) + [ d_item ] }}"
+      loop: "{{ range(passwd | length ) | list }}"
+      vars:
+        line: "{{ passwd[item].split(':') }}"
+        shell: "{{ line[6] }}"
+        comment: "{{ line[4] }}"
+        login: "{{ line[0] }}"
+        uid: "{{ line[2] }}"
+        gid: "{{ line[3] }}"
+        home: "{{ line[5] }}"
+        d_item: "{{ { 'shell': shell, 'comment':comment, 'login':login, 'uid':uid, 'gid':gid, 'home':home } }}"
+
+    - name: update dict with login lenght
+      set_fact:
+        users: "{{ users | rejectattr('login', 'equalto', user.login) | list + [ user | combine ({'login_len':user.login | length })] }}"
+      loop: "{{ users }}"
+      loop_control:
+        loop_var: user
+
+    - name: count total length of logins
+      set_fact:
+        average:     "{{ users|map(attribute='login_len')|sum / passwd | length }}"
+        average_max: "{{ users|map(attribute='login_len')|sum / passwd | length * 1.2}}"
+
+    - name: print avarage logins
+      debug:
+        msg: "{{ users | selectattr('login_len','>=',average|int) | selectattr('login_len','<=',average_max|int) | list }}"
+
+
+#Можно не смотреть.не удачные попытки.
+#    - name: count total length of logins
+#      set_fact:
+#        total: "{{total|default([])+ [user.login | length]}}"
+#      loop: "{{ users }}"
+#      loop_control:
+#        loop_var: user
+#        label: "{{ user.login }}"
+
+#    - name: set average and average_max of logins
+#      set_fact:
+#        average: "{{ total|sum / passwd | length }}"
+#        average_max:  "{{ total|sum / passwd | length * 1.2}}"
+
+#    - name: get average logins
+#      debug:
+#        msg: "{{ users | selectattr('login', '==',root)| map(attribute='login')|list  }}"
+
+
+
+
+
+
+
+

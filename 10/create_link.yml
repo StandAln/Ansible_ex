@@ -1,0 +1,9 @@
+---
+    - name: import task create link for dirs
+      include_tasks: create_symlink_dir.yml
+      when: not dir.stat.islnk
+
+    - name: import task create link for dirs
+      include_tasks: create_symlink_sym.yml
+      when:
+        - dir.stat.islnk

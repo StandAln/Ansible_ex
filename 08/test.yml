@@ -1,0 +1,20 @@
+---
+- name: parsing passwd
+  hosts: localhost
+  gather_facts: no
+#  vars:
+#    var1: test
+
+  tasks:
+
+  - name: print ntp_servers
+    debug:
+      msg: "{{ groups['all'] |list|
+               zip(groups['all'] |
+                   map('extract', hostvars, 'ntp_servers')|list)|
+               list }}"
+
+
+  - name: print var1
+    debug:
+      msg: "This is {{ var1 }}"

@@ -1,0 +1,6 @@
+/dev/mapper/vg_system-lv_var /var ext4 rw,relatime,data=ordered
+/dev/mapper/vg_system-lv_tmp /tmp ext4 rw,relatime,data=ordered
+/dev/vda1 /boot xfs rw,relatime,attr2,inode64,noquota
+/dev/mapper/vg_system-lv_root / ext4 rw,relatime,data=ordered
+/dev/mapper/vg_system-lv_log /var/log ext4 rw,relatime,data=ordered
+/dev/mapper/vg_system-lv_opt /opt ext4 rw,relatime,data=ordered

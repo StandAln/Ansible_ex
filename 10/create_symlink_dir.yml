@@ -1,0 +1,14 @@
+---
+    - name: copy content to "{{ to_dir }}/{{ dir.stat.path | basename }}"
+      synchronize:
+        src: "{{ dir.stat.path }}"
+        dest: "{{ to_dir }}"
+
+    - name: create symlink of "{{ to_dir }}/{{ dir.stat.path | basename }}"
+      file:
+        src: "{{ to_dir }}/{{ dir.stat.path | basename }}"
+        path: "{{ dir.stat.path }}"
+        state: "{{ item }}"
+      loop:
+        - absent
+        - link

@@ -1,0 +1,10 @@
+---
+    - name: create symlink of "{{ to_dir }}/{{ dir.stat.path | basename }}"
+      file:
+        src: "{{ to_dir }}/{{ dir.stat.path | basename }}"
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        force: true
+      loop:
+        - { state: 'directory', path: "{{ to_dir }}/{{ dir.stat.path | basename }}" }
+        - { state: 'link'     , path: '{{ dir.stat.path }}'                         }

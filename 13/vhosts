@@ -1,0 +1,9 @@
+[manager]
+vm-141123
+
+[worker]
+vm-141124
+
+[all:children]
+manager
+worker

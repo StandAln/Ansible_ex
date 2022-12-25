@@ -1,0 +1,11 @@
+#!/bin/python
+import json
+
+with open('/etc/passwd', 'r') as file:
+    users=[]
+    for string in file:
+	user=string.split(':')
+	users.append(user[0])
+print(json.dumps(users))
+
+###echo \"$(cut -d: -f1 /etc/passwd)\"###

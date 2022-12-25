@@ -1,0 +1,55 @@
+---
+- name: gather
+  hosts: all
+  gather_facts: no
+  vars:
+    source: /root
+    src: /opt/homework/10/facts.d
+    dst: /etc/ansible/
+
+  tasks:
+
+    - name: synchronize facts
+      synchronize:
+        src: "{{ src }}"
+        dest: "{{ dst }}"
+        delete: yes
+      tags: facts
+
+
+    - name: gather facts (tmp, dirs+users)
+      setup:
+        gather_subset:
+          - '!all'
+          - '!min'
+          - local
+          - mounts
+
+    - name: show ansible_local
+      debug:
+        msg: "{{ ansible_local }}"
+
+##Из-за того, что при работе Ansible формируется временный файл в /tmp, вида ansible_setup_payload_XXX, то вывод файлов в /tmp будет всегда разный.
+##В следствии этого, используя lineinfile, в файл каждый раз будет добавляться очередной вывод /tmp (а не переписываться)
+##В качестве решения решил использовать модуль copy/content
+#    - name: ansible_facts to txt
+#      lineinfile:
+#        path: "{{ source }}/{{ inventory_hostname }}.txt"
+#        line: "{{ ansible_local | to_nice_yaml}}"
+#        create: yes
+
+    - name: ansible_facts to txt
+      copy:
+        dest: "{{ source }}/{{ inventory_hostname }}.txt"
+        content: |
+          {{ ansible_local | to_nice_yaml}}
+
+    - name: ansible_mounts to fstab
+      lineinfile:
+        path: "{{ source }}/{{ inventory_hostname }}.fstab"
+        line: "{{ mounts.device }} {{ mounts.mount }} {{ mounts.fstype }} {{ mounts.options }}"
+        create: yes
+      loop: "{{ ansible_mounts}}"
+      loop_control:
+        loop_var: mounts
+        label: "{{ mounts.device }} {{ mounts.mount }} {{ mounts.fstype }} {{ mounts.options }}"

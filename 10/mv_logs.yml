@@ -1,0 +1,32 @@
+---
+  - name: move dirs
+    hosts: localhost
+    gather_facts: no
+
+    vars:
+      from_dirs:                         #исходные каталоги:
+        - /tmp/var/log/searcher          #пустой каталог папка
+        - /tmp/var/log/iamap             #каталог содержащий файл
+        - /tmp/var/log/jangateway        #каталог содержащий каталог
+        - /tmp/var/log/loader            #ссылка /var/logs -> /var/opt
+        - /tmp/var/log/jcp               #отсутствующий каталог
+      to_dir: /tmp/data/logs             #каталог назначения,пустой
+
+    tasks:
+
+    - name: get_stat_log
+      stat:
+        path: "{{ item }}"
+      loop: "{{ from_dirs }}"
+      register: stat_log
+
+    - name: import task create_link for dirs
+      include_tasks: create_link.yml
+      loop: "{{ stat_log.results }}"
+      loop_control:
+        loop_var: dir
+      when: dir.stat.exists
+
+
+
+

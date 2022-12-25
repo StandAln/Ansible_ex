@@ -1,0 +1,11 @@
+---
+- name: Create cron for backup configs
+  hosts: manager
+  any_errors_fatal: yes
+  gather_facts: no
+  tasks:
+    - name : Create cron
+      cron:
+        name: "Backup deploy configs"
+        minute: "*"
+        job: cd /opt/homework/05 && ansible-playbook backup.yml

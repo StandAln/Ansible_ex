@@ -1,0 +1,32 @@
+---
+    - pause:
+        prompt: Введите предполагаемое число, которое было загадано
+      register: guess
+
+    - set_fact:
+        count="{{ count|default(0)|int + 1 }}"
+      when:
+        - guess.user_input|int >= dlim|int and guess.user_input|int <= ulim|int
+
+    - name: print out of bound
+      debug:
+        msg: "Введенное число {{guess.user_input}} должно быть  в диапазоне между {{ dlim|int }} и {{ ulim|int }}"
+      when: guess.user_input|int < dlim|int or guess.user_input|int > ulim|int
+
+    - name: print more
+      debug:
+        msg: "Введенное число {{guess.user_input}} больше загаданного"
+      when: guess.user_input|int > rand|int and guess.user_input|int <= ulim|int
+
+    - name: print less
+      debug:
+        msg: "Введенное число {{guess.user_input}} меньше загаданного"
+      when: guess.user_input|int < rand|int and guess.user_input|int >= dlim|int
+
+    - name: print exactly
+      debug:
+        msg: "Вы угадали число {{guess.user_input}} за {{ count }} попыток"
+      when: guess.user_input|int == rand|int
+
+    - include_tasks: guess.yml
+      when: not(guess.user_input|int == rand|int)

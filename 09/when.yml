@@ -1,0 +1,151 @@
+---
+- name: when
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    list1:
+      - searcher
+      - january-admin
+      - gateway
+      - reika
+      - january-passbook
+    list2:
+      - essearcher
+      - january-zipkin
+      - jangateway_wh
+      - jangateway_reika
+      - january
+
+  tasks:
+
+    - name: find all files in path
+      find:
+        paths: /etc/systemd/system
+        hidden: yes
+        recurse: yes
+        file_type: any
+      register: all
+
+#    - name: print all files
+#      debug:
+#        msg: "{{all.files}}"
+
+    - name: set list of files with 200<size<500
+      set_fact:
+        list_file: "{{list_file | default([]) + [files.path]}}"
+      loop: "{{all.files}}"
+      loop_control:
+        loop_var: files
+        label: "{{files.path}}"
+      when:
+        - files.size > 200
+        - files.size < 500
+        - files.islnk is false
+
+#    - name: print files with 200<size<500
+#      debug:
+#        msg: "{{list_file}}"
+
+    - name: set list of links
+      set_fact:
+        list_links: "{{list_links | default([]) + [files.path]}}"
+      loop: "{{all.files}}"
+      loop_control:
+        loop_var: files
+        label: "{{files.path}}"
+      when:
+        - files.islnk is true
+
+#    - name: print links
+#      debug:
+#        msg: "{{list_links}}"
+
+
+    - name: get stat links
+      stat:
+        path: "{{links}}"
+      loop: "{{list_links}}"
+      loop_control:
+        loop_var: links
+      register: stat_links
+
+#    - name: print links stat
+#      debug:
+#        msg: "{{stat_links.results}}"
+
+    - name: set list of targets
+      set_fact:
+        list_targets: "{{list_targets | default([]) + [result.stat.lnk_target]}}"
+      loop: "{{stat_links.results}}"
+      loop_control:
+        loop_var: result
+        label: "{{result.stat.lnk_target}}"
+
+#    - name: print list of targets
+#      debug:
+#        msg: "{{list_targets}}"
+
+
+    - name: get stat target file
+      stat:
+        path: "{{target}}"
+      loop: "{{list_targets}}"
+      loop_control:
+        loop_var: target
+      register: stat_target
+
+#    - name: print targets stat
+#      debug:
+#        msg: "{{stat_target}}"
+
+    - name: set target of links with 200<size<500 to list
+      set_fact:
+        list_targets_size: "{{list_targets_size | default([]) + [results.stat.path]}}"
+      loop: "{{stat_target.results}}"
+      loop_control:
+        loop_var: results
+        label: "{{results.stat.path}}"
+      when:
+        - results.stat.size > 200
+        - results.stat.size < 500
+
+#    - name: print targets with 200<size<500
+#      debug:
+#        msg: "{{list_targets_size}}"
+
+    - name: add target of links to list of files with 200<size<500
+      set_fact:
+        list_file: "{{list_file | default([]) + [results.stat.path]}}"
+      loop: "{{stat_links.results}}"
+      loop_control:
+        loop_var: results
+        label: "{{results.stat.path}}"
+      when:
+        - results.stat.lnk_target in list_targets_size
+
+    - name: print files with 200<size<500
+      debug:
+        msg: "{{list_file}}"
+
+
+    - name: check list1 in list2
+      set_fact:
+#        msg: "{{list1}}+{{list2}}"
+        list_word: "{{ list_word + [word[0]] }}"
+      loop: "{{ list_all | product(list_all) | list }}"
+      loop_control:
+        loop_var: word
+      when: 
+        - word[0] in word[1]
+        - word[0] != word[1]
+        - word[0] not in list_word
+      tags: check
+      vars:
+        list_all: "{{list1}}+{{list2}}"
+        list_word: []
+
+    - name: print words
+      debug:
+        var: list_word
+      tags: check

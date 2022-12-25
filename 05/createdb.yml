@@ -1,0 +1,151 @@
+---
+- name: create DB
+  hosts: worker
+  gather_facts: no
+  any_errors_fatal: false
+  tasks:
+
+#    - name: copy source repo
+#      copy:
+#        src: pgdg-redhat-repo-latest.noarch.rpm
+#        dest: /opt
+#      tags: install
+
+    - name: createrepo
+      yum:
+        name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+        state: present
+        validate_certs: no
+      tags: install
+
+    - name: install postgres
+      yum:
+        name: postgresql14-server
+        state: present
+      tags: install
+
+    - name: check initialized db
+      stat:
+        path: /var/lib/pgsql/14/data/postgresql.conf
+      register: contents
+      tags: init
+
+    - name: initialize db
+      command:
+        cmd: /usr/pgsql-14/bin/postgresql-14-setup initdb
+      when: contents.stat.exists == false
+      tags: init
+
+    - name: change db listen port
+      lineinfile:
+        path: /var/lib/pgsql/14/data/postgresql.conf
+        state: present
+        insertafter: (.*)Connection Settings(.*)
+        firstmatch: true
+        regexp: (.*)port(.)*
+        line: "port = 5433\t\t\t\t#(change requires restart)"
+      notify:
+        - restart postgres
+      tags: config
+
+    - name: create conf.d for db
+      file:
+        path: /var/lib/pgsql/14/data/conf.d
+        owner: postgres
+        group: postgres
+        mode: 0700
+        state: directory
+      tags: config
+
+    - name: include conf.d
+      lineinfile:
+        path: /var/lib/pgsql/14/data/postgresql.conf
+        state: present
+        regexp: "include_dir = 'conf.d'"
+        insertafter: (.*)include(\s)*=(\s)*
+        line: "include_dir = 'conf.d'"
+      notify:
+        - restart postgres
+      tags: config
+
+    - name: allow connections in pg_hba.conf
+      lineinfile:
+        path: /var/lib/pgsql/14/data/pg_hba.conf
+        state: present
+        insertafter: EOF
+        regexp: (.*)host(\s)*all(\s)*all(\s)*0.0.0.0\/0(\s)*trust(\s)*
+        line: "host\tall\t\tall\t\t0.0.0.0/0\t\ttrust"
+      notify:
+        - restart postgres
+      tags: config
+
+    - name: allow connections in postgesql.conf
+      lineinfile:
+        path: /var/lib/pgsql/14/data/postgresql.conf
+        state: present
+        insertafter: (.*)Connection Settings(.*)
+        firstmatch: true
+        regexp: (.*)listen_addresses(.*)
+        line: "listen_addresses = '*'\t\t\t# what IP address(es) to listen on;"
+      notify:
+        - restart postgres
+      tags: config
+
+    - name: allow connections in firewall
+      firewalld:
+        port: 5433/tcp
+        permanent: yes
+        immediate: yes
+        state: enabled
+        offline: yes
+      failed_when: false
+      tags: config
+
+    - name: create /data/logs
+      file:
+        path: /data/logs
+        state: directory
+      tags: logs
+
+    - name: create db log dir
+      file:
+        path: /data/logs/pgsql/14
+        owner: postgres
+        group: postgres
+        state: directory
+      tags: logs
+
+    - name: change log dir in db
+      lineinfile:
+        path: /var/lib/pgsql/14/data/postgresql.conf
+        state: present
+        insertafter: (.*)REPORTING AND LOGGING(.*)
+        regexp: (.*)log_directory(.*)
+        line: "log_directory = '/data/logs/pgsql/14'\t# directory where log files are written,"
+      notify:
+        - restart postgres
+      tags: logs
+
+    - name: enable and start db
+      service:
+        name: postgresql-14
+        enabled: yes
+        state: started
+      tags: start
+
+  handlers:
+    - name: restart postgres
+      service:
+        name: postgresql-14
+        state: restarted
+
+
+
+
+
+
+
+
+##ansible-playbook createdb.yml -t install
+##ansible-playbook createdb.yml -t init
+##ansible-playbook createdb.yml -t logs

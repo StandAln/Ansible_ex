@@ -1,0 +1,10 @@
+Создать плейбук для перемещения в пределах одного сервера содержимого списка каталогов  в каталоги назначения с созданием  символьных ссылок в исходных каталогах на скопированные каталоги. Права и владельцы файлов и каталогов после копирования должны сохраниться. 
+Для получения имени файла/каталога использовать фильтры basename/dirname
+ '/path/to/dirname/filename.txt'|basename      -> filename.txt
+'/path/to/dirname/filename.txt'|dirname   -> /path/to/dirname
+
+Пример:
+/var/log/searcher, /var/log/loader – исходные каталоги с содержимым
+Нужно получить:
+/var/log/searcher ->  /data/logs/searcher
+/var/log/loader -> /data/logs/loader

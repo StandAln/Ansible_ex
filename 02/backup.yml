@@ -1,0 +1,33 @@
+---
+- name: Backup deploy configs to remote host
+  hosts: worker
+  any_errors_fatal: yes
+  gather_facts: yes
+
+  vars:
+
+    src1: /opt/homework/05/vhosts
+    src2: /opt/homework/05/host_vars
+    src3: /opt/homework/05/group_vars
+    backup_dir: "/opt/Backups/{{ ansible_date_time.iso8601_basic_short }}"
+
+  tasks:
+    - name: Create backup directory
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+
+    - name: Copy inventory
+      copy:
+        src: "{{ src1 }}"
+        dest: "{{ backup_dir }}"
+
+    - name: Copy host_vars
+      copy:
+        src: "{{ src2 }}"
+        dest: "{{ backup_dir }}"
+
+    - name: Copy group_vars
+      copy:
+        src: "{{ src3 }}"
+        dest: "{{ backup_dir }}"
